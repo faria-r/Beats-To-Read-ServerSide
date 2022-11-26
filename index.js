@@ -137,9 +137,14 @@ async function run() {
         res.send(result);
       }
     });
+    //API to get specific sellers product on MyProduct Page
+    app.get('/myproducts',async(req,res) =>{
+      const email = req.query.email;
+      const query = {email:email};
+      const result = await BooksCollection.find(query).toArray();
+      res.send(result)
+    })
 
-    //api to get all seller
-    app.get("/");
   } finally {
   }
 }
