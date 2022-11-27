@@ -48,6 +48,7 @@ async function run() {
     const ordersCollection = client.db("beatsToRead").collection("orders");
     const usersCollection = client.db("beatsToRead").collection("users");
     const paymentsCollection = client.db("beatsToRead").collection("payments");
+    const AdsCollection = client.db("beatsToRead").collection("ads");
 
     //verify admin
     const verifyAdmin = async (req, res, next) => {
@@ -209,6 +210,19 @@ res.send(order)
       const updatedBooksStatus = BooksCollection.updateOne(filter,updatedSalesStatus)
       const updatedResult = ordersCollection.updateOne(query,updated)
       res.send(result)
+    })
+    //post data for advertise
+    app.post('/advertise',async(req,res)=>{
+const adsData = req.body;
+const result = await AdsCollection.insertOne(adsData);
+res.send(result)
+    });
+
+    //API to get ads Data
+    app.get('/advertise',async(req,res) =>{
+      const query = {};
+      const ads = await AdsCollection.find(query).toArray();
+      res.send(ads)
     })
     //API to delete products of a specific user
     app.delete("/myproducts/:id", async (req, res) => {
