@@ -47,6 +47,7 @@ async function run() {
     const BooksCollection = client.db("beatsToRead").collection("allBooks");
     const ordersCollection = client.db("beatsToRead").collection("orders");
     const usersCollection = client.db("beatsToRead").collection("users");
+    const paymentsCollection = client.db("beatsToRead").collection("payments");
 
     //verify admin
     const verifyAdmin = async (req, res, next) => {
@@ -183,6 +184,31 @@ res.send(order)
       res.send({
         clientSecret: paymentIntent.client_secret,
       });
+    });
+
+    //API to store payment data 
+
+    app.post('/payments',async(req,res)=>{
+      const paymentInfo = req.body;
+      const result = await paymentsCollection.insertOne(paymentInfo);
+      const id = paymentInfo.orderId;
+      const query = {_id:ObjectId(id)}
+      const bookname= paymentInfo.productName;
+      const filter = {name:bookname}
+      const updated = {
+        $set:{
+          paid:true,
+          transactionId:paymentInfo.transactionId
+        }
+      }
+      const updatedSalesStatus = {
+        $set:{
+          sold:true,
+        }
+      }
+      const updatedBooksStatus = BooksCollection.updateOne(filter,updatedSalesStatus)
+      const updatedResult = ordersCollection.updateOne(query,updated)
+      res.send(result)
     })
     //API to delete products of a specific user
     app.delete("/myproducts/:id", async (req, res) => {
