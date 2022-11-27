@@ -157,6 +157,20 @@ res.send(order)
       const result = await usersCollection.find(query).toArray();
       res.send(result);
     });
+    //API to verify a seller 
+    app.put('/verify/:id',async(req,res)=>{
+      const data = req.body;
+      console.log(data,'d')
+      const id =data.id;
+      const query = {_id:ObjectId(id)};
+      const updatedDoc = {
+        $set:{
+          verified:true
+        }
+      }
+      const result = await usersCollection.updateOne(query,updatedDoc);
+      res.send(result)
+    })
     //API to get buyers
     app.get("/buyers", async (req, res) => {
       const query = { role: "Buyer" };
