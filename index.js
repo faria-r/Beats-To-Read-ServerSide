@@ -2,7 +2,7 @@ const express = require("express");
 const app = express();
 const port = process.env.PORT || 5000;
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
@@ -79,23 +79,19 @@ async function run() {
     });
 
     //api to get buyer
-    app.get('/users/buyer/:email',async(req,res) =>{
+    app.get("/users/buyer/:email", async (req, res) => {
       const email = req.params.email;
-      console.log(email)
-      const query = {email:email};
+      const query = { email: email };
       const user = await usersCollection.findOne(query);
-      console.log(user)
-      res.send({isBuyer: user?.role === 'Buyer'})
-    })
+      res.send({ isBuyer: user?.role === "Buyer" });
+    });
     //api to get seller
-    app.get('/users/seller/:email',async(req,res) =>{
+    app.get("/users/seller/:email", async (req, res) => {
       const email = req.params.email;
-      console.log(email)
-      const query = {email:email};
+      const query = { email: email };
       const user = await usersCollection.findOne(query);
-      console.log(user)
-      res.send({isSeller: user?.role === 'Seller'})
-    })
+      res.send({ isSeller: user?.role === "Seller" });
+    });
     //api to get all categories
     app.get("/categories", async (req, res) => {
       const query = {};
@@ -103,11 +99,11 @@ async function run() {
       res.send(result);
     });
     //api to store added products
-    app.post('/books',async(req,res)=>{
-      const books =req.body;
+    app.post("/books", async (req, res) => {
+      const books = req.body;
       const result = await BooksCollection.insertOne(books);
       res.send(result);
-    })
+    });
 
     //api to get category based book
     app.get("/categories/:name", async (req, res) => {
@@ -124,6 +120,13 @@ async function run() {
       const result = await ordersCollection.insertOne(order);
       res.send(result);
     });
+    //API to get Users orders
+    app.get('/orders',async(req,res)=>{
+const email = req.query.email;
+const query = {email};
+const order = await ordersCollection.find(query).toArray();
+res.send(order)
+    })
     //api to store users
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -131,20 +134,46 @@ async function run() {
       const query = { email: existingUserEmail };
       const existingUser = await usersCollection.findOne(query);
       if (existingUser) {
-        return res.send({message:"user alredy stored"});
+        return res.send({ message: "user alredy stored" });
       } else {
         const result = await usersCollection.insertOne(user);
         res.send(result);
       }
     });
+    //API to get sellers
+    app.get("/sellers", async (req, res) => {
+      const query = { role: "Seller" };
+      const result = await usersCollection.find(query).toArray();
+      res.send(result);
+    });
+    //API to get buyers
+    app.get("/buyers", async (req, res) => {
+      const query = { role: "Buyer" };
+      const result = await usersCollection.find(query).toArray();
+      res.send(result);
+    });
     //API to get specific sellers product on MyProduct Page
-    app.get('/myproducts',async(req,res) =>{
+    app.get("/myproducts", async (req, res) => {
       const email = req.query.email;
-      const query = {email:email};
+      const query = { email: email };
       const result = await BooksCollection.find(query).toArray();
-      res.send(result)
-    })
-
+      res.send(result);
+    });
+    //API to delete products of a specific user
+    app.delete("/myproducts/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = BooksCollection.deleteOne(query);
+      res.send(result);
+    });
+    //API to delete a user(buyer/seller)
+    app.delete("/users/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = usersCollection.deleteOne(query);
+      res.send(result);
+    });
+  
   } finally {
   }
 }
