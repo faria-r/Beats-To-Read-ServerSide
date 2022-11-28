@@ -114,6 +114,7 @@ async function run() {
       const name = req.params.name;
       const query = {
         CategoryName: name,
+        sold:{$exists:false}     
       };
       const result = await BooksCollection.find(query).toArray();
       res.send(result);
@@ -160,7 +161,7 @@ res.send(order)
     //API to verify a seller 
     app.put('/verify/:id',async(req,res)=>{
       const data = req.body;
-      console.log(data,'d')
+     
       const id =data.id;
       const query = {_id:ObjectId(id)};
       const updatedDoc = {
@@ -170,6 +171,22 @@ res.send(order)
       }
       const result = await usersCollection.updateOne(query,updatedDoc);
       res.send(result)
+    });
+
+    //update a verified sellers all products
+    app.put('/books/:email',async(req,res) =>{
+const data = req.body;
+const email = data.email;
+console.log(email)
+const filter = {email:email};
+const updatedSeller = {
+  $set:{
+    gotVerified:true
+  }
+};
+const updateSeller = await BooksCollection.updateMany(filter,updatedSeller);
+console.log(updateSeller,'update')
+res.send(updateSeller)
     })
     //API to get buyers
     app.get("/buyers", async (req, res) => {
@@ -220,7 +237,13 @@ res.send(order)
         $set:{
           sold:true,
         }
-      }
+      };
+      const updatedAdvertiseStatus = {
+        $set:{
+          sold:true,
+        }
+      };
+      const updatedAdsStatus = AdsCollection.updateOne(filter,updatedAdvertiseStatus)
       const updatedBooksStatus = BooksCollection.updateOne(filter,updatedSalesStatus)
       const updatedResult = ordersCollection.updateOne(query,updated)
       res.send(result)
@@ -234,7 +257,9 @@ res.send(result)
 
     //API to get ads Data
     app.get('/advertise',async(req,res) =>{
-      const query = {};
+      const query = {
+        sold:{$exists:false} 
+      };
       const ads = await AdsCollection.find(query).toArray();
       res.send(ads)
     })
@@ -252,6 +277,7 @@ res.send(result)
       const result = usersCollection.deleteOne(query);
       res.send(result);
     });
+    
   
   } finally {
   }
