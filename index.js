@@ -2,7 +2,9 @@ const express = require("express");
 const app = express();
 const port = process.env.PORT || 5000;
 const cors = require("cors");
-const stripe = require("stripe")('sk_test_51M78bXH41fATlRwyC94qW9OVKbsRtDy9fpsfJA6Ad7r2eCvYAuVkkSQs2ZufZXjLY7V4YPup91VjEPbEDuy37AWA005lg7JEou');
+const stripe = require("stripe")(
+  "sk_test_51M78bXH41fATlRwyC94qW9OVKbsRtDy9fpsfJA6Ad7r2eCvYAuVkkSQs2ZufZXjLY7V4YPup91VjEPbEDuy37AWA005lg7JEou"
+);
 // const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
@@ -114,7 +116,7 @@ async function run() {
       const name = req.params.name;
       const query = {
         CategoryName: name,
-        sold:{$exists:false}     
+        sold: { $exists: false },
       };
       const result = await BooksCollection.find(query).toArray();
       res.send(result);
@@ -126,19 +128,19 @@ async function run() {
       res.send(result);
     });
     //API to get Users orders
-    app.get('/orders',async(req,res)=>{
-const email = req.query.email;
-const query = {email};
-const order = await ordersCollection.find(query).toArray();
-res.send(order)
+    app.get("/orders", async (req, res) => {
+      const email = req.query.email;
+      const query = { email };
+      const order = await ordersCollection.find(query).toArray();
+      res.send(order);
     });
-  //API to get id based orders
-  app.get('/order/:id',async(req,res)=>{
-    const id = req.params.id;
-    const query = {_id:ObjectId(id)};
-    const result = await ordersCollection.findOne(query);
-    res.send(result)
-  })
+    //API to get id based orders
+    app.get("/order/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await ordersCollection.findOne(query);
+      res.send(result);
+    });
     //api to store users
     app.post("/users", async (req, res) => {
       const user = req.body;
@@ -153,43 +155,46 @@ res.send(order)
       }
     });
     //API to get sellers
-    app.get("/sellers", async (req, res) => {
+    app.get("/sellers", verifyJWT, verifyAdmin, async (req, res) => {
       const query = { role: "Seller" };
       const result = await usersCollection.find(query).toArray();
       res.send(result);
     });
-    //API to verify a seller 
-    app.put('/verify/:id',async(req,res)=>{
+    //API to verify a seller
+    app.put("/verify/:id", verifyJWT, verifyAdmin, async (req, res) => {
       const data = req.body;
-     
-      const id =data.id;
-      const query = {_id:ObjectId(id)};
+
+      const id = data.id;
+      const query = { _id: ObjectId(id) };
       const updatedDoc = {
-        $set:{
-          verified:true
-        }
-      }
-      const result = await usersCollection.updateOne(query,updatedDoc);
-      res.send(result)
+        $set: {
+          verified: true,
+        },
+      };
+      const result = await usersCollection.updateOne(query, updatedDoc);
+      res.send(result);
     });
 
     //update a verified sellers all products
-    app.put('/books/:email',async(req,res) =>{
-const data = req.body;
-const email = data.email;
-console.log(email)
-const filter = {email:email};
-const updatedSeller = {
-  $set:{
-    gotVerified:true
-  }
-};
-const updateSeller = await BooksCollection.updateMany(filter,updatedSeller);
-console.log(updateSeller,'update')
-res.send(updateSeller)
-    })
+    app.put("/books/:email", async (req, res) => {
+      const data = req.body;
+      const email = data.email;
+      console.log(email);
+      const filter = { email: email };
+      const updatedSeller = {
+        $set: {
+          gotVerified: true,
+        },
+      };
+      const updateSeller = await BooksCollection.updateMany(
+        filter,
+        updatedSeller
+      );
+      console.log(updateSeller, "update");
+      res.send(updateSeller);
+    });
     //API to get buyers
-    app.get("/buyers", async (req, res) => {
+    app.get("/buyers", verifyJWT, verifyAdmin, async (req, res) => {
       const query = { role: "Buyer" };
       const result = await usersCollection.find(query).toArray();
       res.send(result);
@@ -202,67 +207,71 @@ res.send(updateSeller)
       res.send(result);
     });
     //API for payment
-    app.post('/create-payment-intent',async(req,res)=>{
+    app.post("/create-payment-intent", async (req, res) => {
       const order = req.body;
       const price = order.price;
       const amount = price * 100;
       const paymentIntent = await stripe.paymentIntents.create({
-        currency:'usd',
-        amount:amount,
-        'payment_method_types':[
-          "card"
-        ]
+        currency: "usd",
+        amount: amount,
+        payment_method_types: ["card"],
       });
       res.send({
         clientSecret: paymentIntent.client_secret,
       });
     });
 
-    //API to store payment data 
+    //API to store payment data
 
-    app.post('/payments',async(req,res)=>{
+    app.post("/payments", async (req, res) => {
       const paymentInfo = req.body;
       const result = await paymentsCollection.insertOne(paymentInfo);
       const id = paymentInfo.orderId;
-      const query = {_id:ObjectId(id)}
-      const bookname= paymentInfo.productName;
-      const filter = {name:bookname}
+      const query = { _id: ObjectId(id) };
+      const bookname = paymentInfo.productName;
+      const filter = { name: bookname };
       const updated = {
-        $set:{
-          paid:true,
-          transactionId:paymentInfo.transactionId
-        }
-      }
+        $set: {
+          paid: true,
+          transactionId: paymentInfo.transactionId,
+        },
+      };
       const updatedSalesStatus = {
-        $set:{
-          sold:true,
-        }
+        $set: {
+          sold: true,
+        },
       };
       const updatedAdvertiseStatus = {
-        $set:{
-          sold:true,
-        }
+        $set: {
+          sold: true,
+        },
       };
-      const updatedAdsStatus = AdsCollection.updateOne(filter,updatedAdvertiseStatus)
-      const updatedBooksStatus = BooksCollection.updateOne(filter,updatedSalesStatus)
-      const updatedResult = ordersCollection.updateOne(query,updated)
-      res.send(result)
-    })
+      const updatedAdsStatus = AdsCollection.updateOne(
+        filter,
+        updatedAdvertiseStatus
+      );
+      const updatedBooksStatus = BooksCollection.updateOne(
+        filter,
+        updatedSalesStatus
+      );
+      const updatedResult = ordersCollection.updateOne(query, updated);
+      res.send(result);
+    });
     //post data for advertise
-    app.post('/advertise',async(req,res)=>{
-const adsData = req.body;
-const result = await AdsCollection.insertOne(adsData);
-res.send(result)
+    app.post("/advertise", async (req, res) => {
+      const adsData = req.body;
+      const result = await AdsCollection.insertOne(adsData);
+      res.send(result);
     });
 
     //API to get ads Data
-    app.get('/advertise',async(req,res) =>{
+    app.get("/advertise", async (req, res) => {
       const query = {
-        sold:{$exists:false} 
+        sold: { $exists: false },
       };
       const ads = await AdsCollection.find(query).toArray();
-      res.send(ads)
-    })
+      res.send(ads);
+    });
     //API to delete products of a specific user
     app.delete("/myproducts/:id", async (req, res) => {
       const id = req.params.id;
@@ -277,8 +286,6 @@ res.send(result)
       const result = usersCollection.deleteOne(query);
       res.send(result);
     });
-    
-  
   } finally {
   }
 }
