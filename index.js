@@ -229,6 +229,7 @@ async function run() {
       const id = paymentInfo.orderId;
       const query = { _id: ObjectId(id) };
       const bookname = paymentInfo.productName;
+      //filter for book name
       const filter = { name: bookname };
       const updated = {
         $set: {
