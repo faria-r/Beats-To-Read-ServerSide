@@ -4,7 +4,7 @@ const port = process.env.PORT || 5000;
 const cors = require("cors");
 const stripe = require("stripe")(
   "sk_test_51M78bXH41fATlRwyC94qW9OVKbsRtDy9fpsfJA6Ad7r2eCvYAuVkkSQs2ZufZXjLY7V4YPup91VjEPbEDuy37AWA005lg7JEou"
-);
+);//Stripe Key is changed in env
 // const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
